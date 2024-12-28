@@ -1,0 +1,74 @@
+version: '3'
+
+services:
+
+  mariadb:
+    build: ./requirements/mariaDB
+    container_name: mariadb
+    networks:
+      - inception
+    env_file: .env
+    volumes:
+      - mariadb:/var/lib/mysql
+    restart: unless-stopped
+    expose:
+    - "3306"
+    # healthcheck:
+    #   test: ["CMD", "mysqladmin", "ping", "--silent"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+
+  nginx:
+    build: ./requirements/nginx
+    container_name: nginx
+    env_file: .env
+    volumes:
+      - wordpress:/var/www/html
+    networks:
+      - inception
+    depends_on:
+      - wordpress
+    ports:
+      - "443:443"
+    restart: on-failure
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "https://localhost"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+
+  wordpress:
+    build: ./requirements/wordpress
+    container_name: wordpress
+    env_file: .env
+    volumes:
+    - wordpress:/var/www/html
+    networks:
+    - inception
+    depends_on:
+    - mariadb
+    restart: on-failure
+    expose: 
+    - "9000"
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:9000"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+volumes:
+  wordpress:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/lvodak/data/wordpress
+  mariadb:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/lvodak/data/mariadb
+networks:
+  inception:
+    driver: bridge
